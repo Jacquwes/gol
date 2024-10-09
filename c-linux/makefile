@@ -1,7 +1,7 @@
 all: gol
 
 gol: gol.o
-	gcc gol.o -o gol -lncurses
+	gcc gol.o -o gol -lncurses -g
 
 gol.o: gol.c
-	gcc -c gol.c -o gol.o
+	gcc -c gol.c -o gol.o -g

@@ -4,32 +4,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef char cell;
 
 enum cell_state : cell
 {
-  ALIVE_CELL,
-  DEAD_CELL,
+  ALIVE_CELL = '0',
+  DEAD_CELL = '.',
 };
 
 void init_screen()
 {
-  initscr();
-  clear();
+  initscr();            // Start screen tracking
+  cbreak();             // Disable line buffering
+  noecho();             // Don't print characters typed by the user
+  keypad(stdscr, TRUE); // Enable terminal keypad
+  curs_set(0);          // Hide the cursor
+  clear();              // Clear the screen
+  if (has_colors())
+  {
+    start_color();
+    init_pair(1, COLOR_GREEN, COLOR_BLACK);
+  }
   refresh();
 }
 
 uint8_t count_neighbors(cell* grid, uint32_t height, uint32_t width, uint32_t x, uint32_t y)
 {
   uint8_t neighbor_count = 0;
-  for (uint8_t y_offset = -1; y_offset <= 1; y_offset++)
+  for (int8_t y_offset = -1; y_offset <= 1; y_offset++)
   {
-    uint32_t y_index = (y + y_offset) % height;
-
-    for (uint8_t x_offset = -1; x_offset <= 1; x_offset++)
+    for (int8_t x_offset = -1; x_offset <= 1; x_offset++)
     {
-      uint32_t x_index = (x + x_offset) % width;
+      if (x_offset == 0 && y_offset == 0)
+        continue;
+
+      uint32_t x_index = (x + x_offset + width) % width;
+      uint32_t y_index = (y + y_offset + height) % height;
 
       if (grid[y_index * width + x_index] == ALIVE_CELL)
         neighbor_count++;
@@ -40,7 +52,12 @@ uint8_t count_neighbors(cell* grid, uint32_t height, uint32_t width, uint32_t x,
 
 void display_game_state(cell* grid, uint32_t height, uint32_t width)
 {
-  
+  for (uint32_t y = 0; y < height; y++)
+    for (uint32_t x = 0; x < width; x++)
+    {
+      mvaddch(y, x, grid[y * width + x]);
+    }
+  refresh();
 }
 
 void init_pattern(cell* grid, uint32_t height, uint32_t width)
@@ -48,7 +65,7 @@ void init_pattern(cell* grid, uint32_t height, uint32_t width)
   for (uint32_t y = 0; y < height; y++)
     for (uint32_t x = 0; x < width; x++)
         grid[y * width + x] = 
-          rand() & 0b1111 == 0b1111 ? // ~7% of alive cells
+          rand() & 0xff == 0xff ? // ~7% of alive cells
           ALIVE_CELL :
           DEAD_CELL;
 }
@@ -88,9 +105,16 @@ int main()
   init_pattern(grid, height, width);
   init_screen();
 
+  nodelay(stdscr, TRUE);
+
   while (1)
   {
     game_loop(grid, height, width);
     display_game_state(grid, height, width);
+    if (getch() == 'q') break;
+    usleep(100000);
   }
+
+  free(grid);
+  endwin();
 }
