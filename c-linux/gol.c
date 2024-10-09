@@ -1,3 +1,4 @@
+#include <curses.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,9 +13,11 @@ enum cell_state : cell
   DEAD_CELL,
 };
 
-void clear_screen()
+void init_screen()
 {
-  printf("\x1b[H\x1b[J");
+  initscr();
+  clear();
+  refresh();
 }
 
 uint8_t count_neighbors(cell* grid, uint32_t height, uint32_t width, uint32_t x, uint32_t y)
@@ -83,7 +86,7 @@ int main()
 
   cell* grid = malloc(sizeof(cell) * height * width);
   init_pattern(grid, height, width);
-  clear_screen();
+  init_screen();
 
   while (1)
   {
